@@ -10,5 +10,10 @@ router.use("/comment", require("./comment.routes"))
 router.use("/like", require("./like.routes"))
 router.use("/media", require("./media.routes"))
 router.use("/report", require("./report.routes"))
+router.use("/authors", require("./authors.routes"))
+router.use("/new_tags", require("./new_tags.routes"))
+router.use("/notifaction", require("./new_tags.routes"))
+router.use("/views", require("./views.routes"))
+
 
 module.exports=router
