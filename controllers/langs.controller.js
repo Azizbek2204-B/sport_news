@@ -8,7 +8,7 @@ const addNewLang = async (req, res) => {
       `INSERT INTO languages(name ,code)
         VALUES ($1, $2) RETURNING *
         `,
-      [name, lang_code]
+      [name, lang]
     );
     console.log(newLang);
     console.log(newLang.rows[0]);
@@ -39,11 +39,11 @@ const getALLlanguagesById = async (req, res) => {
   }
 };
 const Updatelangstypes = async (req, res) => {
-  const { name, lang_code } = req.body;
+  const { name, lang } = req.body;
   const id = req.params.id;
   const update = await pool.query(
-    `UPDATE languages set name=$1,lang_code=$2 where id=${id}`,
-    [name, lang_code]
+    `UPDATE languages set name=$1,lang=$2 where id=${id}`,
+    [name, lang]
   );
   res.status(201).send({ message: "Malumotlar muvaffaqqiyatli yangilandi" });
 };
