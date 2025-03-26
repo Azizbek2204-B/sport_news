@@ -5,7 +5,7 @@ const addNewLang = async (req, res) => {
   try {
     const { name, lang_code } = req.body;
     const newLang = await pool.query(
-      `INSERT INTO languages(name ,lang_code)
+      `INSERT INTO languages(name ,code)
         VALUES ($1, $2) RETURNING *
         `,
       [name, lang_code]
