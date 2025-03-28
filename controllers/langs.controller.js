@@ -3,7 +3,7 @@ const { errorHandler } = require("../helpers/error_handler");
 
 const addNewLang = async (req, res) => {
   try {
-    const { name, lang_code } = req.body;
+    const { name, lang } = req.body;
     const newLang = await pool.query(
       `INSERT INTO languages(name ,code)
         VALUES ($1, $2) RETURNING *
@@ -16,7 +16,7 @@ const addNewLang = async (req, res) => {
       .status(201)
       .send({ message: "Yangi til qo'shildi", lang: newLang.rows[0] });
   } catch (error) {
-    errorHandler(error, res);
+    errorHandler(error, res); 
   }
 };
 const getALLlanguagestypes = async (req, res) => {

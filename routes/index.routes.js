@@ -14,6 +14,6 @@ router.use("/authors", require("./authors.routes"))
 router.use("/new_tags", require("./new_tags.routes"))
 router.use("/notifaction", require("./new_tags.routes"))
 router.use("/views", require("./views.routes"))
-
+router.use("/opt", require("./otp.routes"))
 
 module.exports=router

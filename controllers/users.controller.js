@@ -1,5 +1,17 @@
 const pool = require("../config/db");
 const { errorHandler } = require("../helpers/error_handler");
+const JwtService = require("../services/jwt.service");
+const config = require('config');
+const DeviceDetector = require('node-device-detector');
+const DeviceHelper = require('node-device-detector/helper');
+const detector = new DeviceDetector({
+  clientIndexes: true,
+  deviceIndexes: true,
+  deviceAliasCode: false,
+  deviceTrusted: false,
+  deviceInfo: false,
+  maxUserAgentSize: 500,
+});
 
 const addUser = async (req, res) => {
   try {
@@ -29,7 +41,7 @@ const addUser = async (req, res) => {
         interests,
         bookmarks,
       ]
-    );
+    ); 
 
     res
       .status(201)
@@ -44,6 +56,11 @@ const addUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
   try {
+    const userAgent = req.headers["user-agent"]
+    // console.log(userAgent);
+    const result = detector.detect(userAgent);
+    console.log("result", result);
+    console.log(DeviceHelper.isDesktop(result));
     const results = await pool.query(
       "SELECT * FROM users ORDER BY created_at DESC"
     );
@@ -132,10 +149,94 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
+
+    if (user.rows.length === 0) {
+      return res.status(400).send({ message: "Email yoki parol noto'g'ri1" });
+    }
+    const validPassword = password === user.rows[0].password;
+    if (!validPassword) {
+      return res.status(400).send({ message: "Email yoki parol noto'g'ri" });
+    }    
+
+    const payload = { id: user.rows[0].id, email: user.rows[0].email };
+    const tokens = JwtService.generateTokens(payload);
+
+    // await pool.query("UPDATE users SET refresh_token = $1 WHERE id = $2", [
+    //   tokens.refreshToken,
+    //   user.rows[0].id,
+    // ]);
+
+    res.cookie("refreshToken", tokens.refreshToken, {
+      httpOnly: true,
+      maxAge: config.get("refresh_cookie_time"),
+    });
+
+    res.send({
+      message: "Tizimga hush kelibsiz",
+      accessToken: tokens.accessToken,
+    });
+  } catch (error) {
+    errorHandler(error, res);
+  }
+};
+
+const logoutUser = async (req, res) => {
+  try {
+    const { refreshToken } = req.cookies;
+    if (!refreshToken) {
+      return res.status(400).send({ message: "Cookie da refresh token mavjud emas" });
+    }
+
+    const user = await pool.query("UPDATE users SET refresh_token = NULL WHERE refresh_token = $1 RETURNING *", [
+      refreshToken,
+    ]);
+
+    if (user.rowCount === 0) {
+      return res.status(400).send({ message: "Bunday tokenli foydalanuvchi topilmadi" });
+    }
+
+    res.clearCookie("refreshToken");
+    res.send({ message: "Foydalanuvchi tizimdan chiqdi" });
+  } catch (error) {
+    errorHandler(error, res);
+  }
+};
+
+
+const activateUser = async (req, res) => {
+  try {
+    const user = await pool.query("SELECT * FROM users WHERE activation_link = $1", [
+      req.params.link,
+    ]);
+
+    if (user.rows.length === 0) {
+      return res.status(404).send({ message: "Foydalanuvchi topilmadi" });
+    }
+
+    await pool.query("UPDATE users SET is_active = true WHERE activation_link = $1", [
+      req.params.link,
+    ]);
+
+    res.send({ message: "Foydalanuvchi faollashtirildi", status: true });
+  } catch (error) {
+    errorHandler(error, res);
+  }
+};
+
 module.exports = {
   addUser,
   getAllUsers,
   getUserById,
   updateUser,
   deleteUser,
+  loginUser,
+  logoutUser,
+  activateUser
 };
